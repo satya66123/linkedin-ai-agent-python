@@ -15,20 +15,16 @@ def generate_linkedin_post(topic, model="llama3:instruct"):
         return f"Invalid model. Supported: {SUPPORTED_MODELS}"
 
     prompt = f"""
-    Act as a top LinkedIn content creator.
+    Write a LinkedIn post about {topic}.
 
-    Topic: {topic}
-
-    Write a high-quality LinkedIn post with:
-    - Strong hook
-    - Engaging content
+    Include:
+    - Hook with emoji
     - Short paragraphs
-    - Call to action
+    - CTA
     - 5 hashtags
 
-    Tone: Professional and impactful
+    Tone: Professional but engaging
     """
-
     try:
         print(f"[INFO] Generating post using model: {model}")
 
@@ -45,7 +41,10 @@ def generate_linkedin_post(topic, model="llama3:instruct"):
         response.raise_for_status()
 
         data = response.json()
-        return data.get("response", "").strip().replace("**", "")
+        content= data.get("response", "").strip().replace("**", "")
+        contents = content.replace("  ", "\n").strip()
+        return contents
+
 
     except requests.exceptions.Timeout:
         return "Error: Ollama request timed out"
