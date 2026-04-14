@@ -1,0 +1,4 @@
+DB_HOST=localhost
+DB_USER=linkedin_user
+DB_PASSWORD=linkedin_password
+DB_NAME=linkedin_ai
