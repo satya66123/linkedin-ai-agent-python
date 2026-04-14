@@ -58,3 +58,34 @@ def generate_comment(content, model=DEFAULT_MODEL):
 def generate_hashtags(topic, model=DEFAULT_MODEL):
     prompt = f"Generate 8 LinkedIn hashtags for {topic}"
     return call_ollama(prompt, model)
+
+def score_post(content, model="phi3:latest"):
+    prompt = f"""
+    Rate the following LinkedIn post out of 10 based on:
+    - Clarity
+    - Engagement
+    - Professional tone
+
+    Post:
+    {content}
+
+    Return only score and short reason.
+    """
+
+    return call_ollama(prompt, model)
+
+from services.rag_service import retrieve_context
+
+def generate_post_with_rag(topic):
+    context = retrieve_context(topic)
+
+    context_text = "\n".join(context)
+
+    prompt = f"""
+    Use this context:
+    {context_text}
+
+    Topic: {topic}
+    """
+
+    return call_ollama(prompt)

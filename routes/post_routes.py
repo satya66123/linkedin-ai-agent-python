@@ -1,57 +1,65 @@
 from flask import Blueprint, request, jsonify
-from services.ai_service import generate_post, generate_comment, generate_hashtags
-from repository.post_repository import save_post, get_all_posts
-from dto.post_dto import PostRequestDTO
+from services.ai_service import generate_post, generate_comment, generate_hashtags, score_post
+from repository.post_repository import save_post, get_all_posts, save_favorite, get_favorites
 
 post_bp = Blueprint("post_bp", __name__)
 
 
-# 🔹 Generate Post
 @post_bp.route("/generate", methods=["POST"])
 def generate():
-    dto = PostRequestDTO(request.json)
+    data = request.json
+    topic = data.get("topic")
+    style = data.get("style", "professional")
 
-    valid, error = dto.validate()
-    if not valid:
-        return jsonify({"error": error}), 400
+    content = generate_post(topic, style=style)
+    save_post(topic, content, "phi3")
 
-    content = generate_post(dto.topic, dto.model, dto.style)
-
-    save_post(dto.topic, content, dto.model)
-
-    return jsonify({
-        "message": "Post generated",
-        "data": {
-            "topic": dto.topic,
-            "style": dto.style,
-            "model": dto.model,
-            "content": content
-        }
-    })
+    return jsonify({"data": {"content": content}})
 
 
-# 🔹 Get Posts
-@post_bp.route("/posts", methods=["GET"])
-def posts():
-    data = get_all_posts()
-    return jsonify({"count": len(data), "data": data})
-
-
-# 🔹 Generate Comment
 @post_bp.route("/comment", methods=["POST"])
 def comment():
     content = request.json.get("content")
-    if not content:
-        return {"error": "Content required"}, 400
-
-    return {"comment": generate_comment(content)}
+    return jsonify({"comment": generate_comment(content)})
 
 
-# 🔹 Generate Hashtags
 @post_bp.route("/hashtags", methods=["POST"])
 def hashtags():
     topic = request.json.get("topic")
-    if not topic:
-        return {"error": "Topic required"}, 400
+    return jsonify({"hashtags": generate_hashtags(topic)})
 
-    return {"hashtags": generate_hashtags(topic)}
+
+@post_bp.route("/posts", methods=["GET"])
+def posts():
+    return jsonify({"data": get_all_posts()})
+
+
+# ⭐ Save favorite
+@post_bp.route("/favorite", methods=["POST"])
+def add_favorite():
+    data = request.json
+    save_favorite(data.get("topic"), data.get("content"))
+    return jsonify({"message": "Saved"})
+
+
+# ⭐ Get favorites
+@post_bp.route("/favorites", methods=["GET"])
+def fetch_favorites():
+    return jsonify({"data": get_favorites()})
+
+
+# 🧠 Score
+@post_bp.route("/score", methods=["POST"])
+def score():
+    content = request.json.get("content")
+    return jsonify({"score": score_post(content)})
+
+from services.ai_service import generate_post_with_rag
+@post_bp.route("/generate-rag", methods=["POST"])
+def generate_rag():
+    data = request.json
+    topic = data.get("topic")
+
+    content = generate_post_with_rag(topic)
+
+    return {"data": {"content": content}}
