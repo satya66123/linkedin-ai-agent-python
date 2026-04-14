@@ -2,55 +2,59 @@ import requests
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 
-SUPPORTED_MODELS = [
-    "llama3:latest",
-    "llama3:instruct",
-    "mistral:latest",
-    "phi3:latest"
-]
+DEFAULT_MODEL = "phi3:latest"  # 🔥 fast model
 
-def generate_linkedin_post(topic, model="llama3:instruct"):
-
-    if model not in SUPPORTED_MODELS:
-        return f"Invalid model. Supported: {SUPPORTED_MODELS}"
-
-    prompt = f"""
-    Write a LinkedIn post about {topic}.
-
-    Include:
-    - Hook with emoji
-    - Short paragraphs
-    - CTA
-    - 5 hashtags
-
-    Tone: Professional but engaging
-    """
+def call_ollama(prompt, model=DEFAULT_MODEL):
     try:
-        print(f"[INFO] Generating post using model: {model}")
-
         response = requests.post(
             OLLAMA_URL,
             json={
                 "model": model,
                 "prompt": prompt,
-                "stream": False
+                "stream": False,
+                "options": {
+                    "num_predict": 200  # 🔥 speed optimization
+                }
             },
-            timeout=600
+            timeout=120
         )
 
         response.raise_for_status()
-
-        data = response.json()
-        content= data.get("response", "").strip().replace("**", "")
-        contents = content.replace("  ", "\n").strip()
-        return contents
-
-
-    except requests.exceptions.Timeout:
-        return "Error: Ollama request timed out"
-
-    except requests.exceptions.ConnectionError:
-        return "Error: Cannot connect to Ollama. Is it running?"
+        return response.json().get("response", "").strip()
 
     except Exception as e:
         return f"Error: {str(e)}"
+
+
+# 🔹 Generate Post
+def generate_post(topic, model=DEFAULT_MODEL, style="professional"):
+
+    if style == "viral":
+        prompt = f"""
+        Write a viral LinkedIn post about {topic}.
+        Use short punchy lines, strong hook, CTA, and hashtags.
+        """
+    elif style == "story":
+        prompt = f"""
+        Tell a short personal story about {topic} for LinkedIn.
+        Include lesson and CTA.
+        """
+    else:
+        prompt = f"""
+        Write a professional LinkedIn post about {topic}.
+        Include hook, content, CTA, and hashtags.
+        """
+
+    return call_ollama(prompt, model)
+
+
+# 🔹 Generate Comment
+def generate_comment(content, model=DEFAULT_MODEL):
+    prompt = f"Write a professional LinkedIn comment for:\n{content}"
+    return call_ollama(prompt, model)
+
+
+# 🔹 Generate Hashtags
+def generate_hashtags(topic, model=DEFAULT_MODEL):
+    prompt = f"Generate 8 LinkedIn hashtags for {topic}"
+    return call_ollama(prompt, model)
