@@ -1,29 +1,39 @@
-from flask import Flask
-from db import get_connection
+from flask import Flask, request, jsonify
+from services.ai_service import generate_linkedin_post
 
 app = Flask(__name__)
 
 @app.route("/")
 def home():
-    try:
-        get_connection()
-        return "DB Connected Successfully ✅"
-    except Exception as e:
-        return f"DB Connection Failed ❌ {str(e)}"
+    return "Ollama AI Agent Running 🚀"
 
-@app.route("/test-insert")
-def test_insert():
-    conn = get_connection()
-    cursor = conn.cursor()
 
-    cursor.execute(
-        "INSERT INTO posts (topic, content, model) VALUES (%s, %s, %s)",
-        ("Test Topic", "This is a test post", "llama3")
-    )
+@app.route("/generate", methods=["POST"])
+def generate():
+    data = request.json
 
-    conn.commit()
+    topic = data.get("topic")
+    model = data.get("model", "llama3:instruct")
 
-    return "Data Inserted ✅"
+    print(f"[REQUEST] Topic: {topic}, Model: {model}")
+
+    if not topic:
+        return jsonify({
+            "status": "error",
+            "message": "Topic is required"
+        }), 400
+
+    content = generate_linkedin_post(topic, model)
+
+    return jsonify({
+        "status": "success",
+        "data": {
+            "topic": topic,
+            "model": model,
+            "content": content
+        }
+    })
+
 
 if __name__ == "__main__":
     app.run(debug=True)
