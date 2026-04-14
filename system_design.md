@@ -1,95 +1,126 @@
-# 🏗️ System Design – LinkedIn AI Agent
+# 🏗 System Design – LinkedIn AI Agent
 
-## 🎯 Overview
+## 📌 Overview
 
-The system is designed as a **modular AI backend** that generates LinkedIn content using a local LLM (Ollama) and stores results in MySQL.
-
----
-
-## 🧱 High-Level Architecture
-
-Client → Flask API → Service Layer → Ollama → Response → Repository → MySQL → Client
+A full-stack AI application that generates LinkedIn posts using local LLMs (Ollama) with RAG for contextual responses.
 
 ---
 
-## 🔄 Flow Explanation
+## 🔄 High-Level Flow
 
-1. Client sends request (`/generate`)
-2. Route layer receives request
-3. DTO validates input
-4. Service layer builds prompt
-5. Ollama generates AI content
-6. Repository saves data in MySQL
-7. Response returned to client
+User → Streamlit UI → Flask Backend → Services → DB + RAG → Ollama → Response → UI
 
 ---
 
 ## 🧩 Components
 
-### 1. Routes (Controller Layer)
-
-* Handles API endpoints
-* Example: `/generate`, `/posts`
+### 1. Frontend (Streamlit)
+- User input (topic, style)
+- Displays generated content
+- Handles session state
+- Calls backend APIs
 
 ---
 
-### 2. DTO (Data Validation)
-
-* Validates request data
-* Prevents invalid input
+### 2. Backend (Flask)
+- REST APIs
+- JWT Authentication
+- Request validation
+- Routes:
+  - `/login`
+  - `/register`
+  - `/generate`
+  - `/generate-rag`
+  - `/comment`
+  - `/hashtags`
+  - `/favorite`
+  - `/posts`
 
 ---
 
 ### 3. Service Layer
-
-* Contains AI logic
-* Handles prompt engineering
-* Calls Ollama API
+- Business logic
+- AI prompt construction
+- RAG integration
 
 ---
 
 ### 4. Repository Layer
-
-* Handles database operations
-* Inserts and fetches data
+- MySQL queries
+- Data persistence
 
 ---
 
 ### 5. Database (MySQL)
-
-* Stores generated posts
-* Enables persistence
-
----
-
-## ⚙️ Design Principles
-
-* Separation of Concerns
-* Modular Architecture
-* Reusability
-* Scalability
+Tables:
+- users
+- posts
+- favorites
 
 ---
 
-## 🚀 Performance Considerations
-
-* Use lightweight models (phi3)
-* Limit token generation (`num_predict`)
-* Warm up models before usage
-
----
-
-## 📈 Scalability Improvements
-
-* Add caching layer (Redis)
-* Use async processing (Celery)
-* Deploy with GPU for faster inference
+### 6. AI Layer (Ollama)
+- Models:
+  - llama3
+  - mistral
+- Runs locally (no API dependency)
 
 ---
 
-## 🔐 Future Enhancements
+### 7. RAG (Retrieval Augmented Generation)
+- SentenceTransformers → embeddings
+- FAISS → similarity search
+- Retrieves past posts for context
 
-* User authentication system
-* Multi-user support
-* Analytics dashboard
-* Scheduled post generation
+---
+
+## 🧠 Sequence Flow (Generate with RAG)
+
+1. User enters topic
+2. Frontend → `/generate-rag`
+3. Backend:
+   - Retrieve similar posts (FAISS)
+   - Build prompt with context
+4. Send prompt → Ollama
+5. Receive AI response
+6. Return to frontend
+
+---
+
+## ⚡ Key Design Decisions
+
+- Used **Ollama** → avoids external API cost
+- Used **RAG** → improves content quality
+- Used **layered architecture** → scalable & maintainable
+- Used **JWT** → secure APIs
+
+---
+
+## 🚀 Scalability Considerations
+
+- Replace FAISS with vector DB (Pinecone)
+- Use Redis caching
+- Deploy via Docker + Kubernetes
+
+---
+
+## 🔐 Security
+
+- JWT authentication
+- Protected routes
+- Input validation
+
+---
+
+## ⚠️ Limitations
+
+- Local model latency
+- No distributed system yet
+
+---
+
+## 🔮 Future Enhancements
+
+- Chat-based UI
+- Streaming responses
+- Multi-user dashboards

@@ -1,33 +1,41 @@
-# 🏗️ System Architecture
+# 🏗 Architecture
 
 ## Flow
 
-Client → Flask API → AI Service → Ollama → Response → MySQL → Client
+Frontend (Streamlit)
+        ↓
+Backend (Flask APIs)
+        ↓
+Services Layer
+        ↓
+Repository Layer
+        ↓
+MySQL Database
 
-## Layers
+        ↓
+Ollama (LLM)
+        ↓
+RAG (FAISS + Embeddings)
 
-### 1. Routes
+---
 
-Handles API endpoints
+## Components
 
-### 2. DTO
+### 1. Frontend
+- Streamlit UI
+- Handles user input
 
-Validates input data
+### 2. Backend
+- Flask APIs
+- JWT authentication
 
-### 3. Service
+### 3. AI Layer
+- Ollama models (llama3, mistral)
 
-Processes AI logic
-
-### 4. Repository
-
-Handles DB operations
+### 4. RAG
+- SentenceTransformers
+- FAISS vector search
 
 ### 5. Database
-
-Stores generated posts
-
-## Benefits
-
-* Clean structure
-* Scalable
-* Easy to maintain
+- MySQL
+- Stores posts, favourites

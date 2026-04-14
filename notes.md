@@ -1,48 +1,35 @@
-# 🧠 Notes & Learnings
+# 🧪 Problems Faced & Solutions
 
-## 🔹 Ollama
-
-* Runs LLM locally
-* No API key required
-* Models:
-
-  * phi3 → fast
-  * mistral → balanced
-  * llama3 → high quality
+## 1. Streamlit Navigation Issue
+Problem: Not moving after login  
+Solution: Used session_state page control
 
 ---
 
-## 🔹 Flask
-
-* Lightweight backend framework
-* Used for REST APIs
-
----
-
-## 🔹 MySQL
-
-* Stores generated posts
-* Used for persistence
+## 2. Duplicate Element ID
+Problem: Same input labels  
+Solution: Added unique keys
 
 ---
 
-## 🔹 Architecture
-
-* DTO → validation
-* Service → business logic
-* Repository → DB operations
-* Routes → API layer
+## 3. Ollama Timeout
+Problem: Slow response  
+Solution: Reduced prompt size
 
 ---
 
-## 🔹 Performance Tips
-
-* Use smaller models (phi3)
-* Limit tokens (`num_predict`)
-* Warm up models
+## 4. JWT Issues
+Problem: Unauthorized errors  
+Solution: Fixed headers
 
 ---
 
-## 🔹 Key Concept
+## 5. False Backend Error
+Problem: Showing wrong error  
+Solution: Cleaned safe_request()
 
-Separation of concerns improves scalability and maintainability.
+---
+
+## 6. RAG Import Error
+Problem: function not found  
+Solution: Fixed service structure

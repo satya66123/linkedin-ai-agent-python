@@ -1,58 +1,34 @@
-# 🧭 Project Planner – LinkedIn AI Agent
-
-## 🎯 Objective
-
-Build an AI-powered LinkedIn content generator using **Python, Flask, Ollama, and MySQL**.
 
 ---
 
-## 🗓️ Development Plan
+# 📄 `planner.md`
 
-### Day 1
+```md
+# 📅 Project Planner
 
-* GitHub repo creation
-* PyCharm setup
-* Flask basic app
+## Day 1
+- Setup project structure
+- Flask backend initialized
 
-### Day 2
+## Day 2
+- CRUD APIs
+- MySQL integration
 
-* MySQL installation
-* DB connection
-* Table creation
+## Day 3
+- Ollama integration
+- AI post generation
 
-### Day 3
+## Day 4
+- RAG implementation (FAISS + embeddings)
 
-* Ollama integration
-* AI post generation API
+## Day 5
+- Streamlit frontend
 
-### Day 4
+## Day 6
+- Auth (JWT)
+- Favorites + scoring
 
-* Save AI output to MySQL
-* Fetch posts API
-
-### Day 5
-
-* Clean architecture (DTO, repository, routes)
-
-### Day 6
-
-* Advanced features:
-
-  * Post styles
-  * Comment generator
-  * Hashtag generator
-
-### Day 7
-
-* Documentation
-* UI
-* GitHub finalization
-
----
-
-## 🚀 Final Deliverables
-
-* AI-powered backend
-* MySQL integration
-* Clean architecture
-* GitHub portfolio project
+## Day 7
+- UI improvements
+- Error handling
+- Final polishing
