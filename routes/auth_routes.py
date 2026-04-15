@@ -1,50 +1,46 @@
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token
-from services.auth_service import register_user, login_user
+from flask import Blueprint, request
+import jwt
+import datetime
+from db import get_connection
 
-auth_bp = Blueprint("auth_bp", __name__)
+auth_bp = Blueprint("auth", __name__)
 
-# ----------------------------
-# REGISTER
-# ----------------------------
+SECRET = "this_is_a_secure_secret_key_32_characters_long"
+
 @auth_bp.route("/register", methods=["POST"])
 def register():
     data = request.json
+    username = data.get("username")
+    password = data.get("password")
 
-    try:
-        username = data.get("username")
-        password = data.get("password")
+    conn = get_connection()
+    cursor = conn.cursor()
 
-        if not username or not password:
-            return jsonify({"error": "Username and password required"}), 400
+    cursor.execute("INSERT INTO users(username,password) VALUES(%s,%s)", (username, password))
+    conn.commit()
+    conn.close()
 
-        register_user(username, password)
+    return {"message": "User created"}
 
-        return jsonify({"message": "User created successfully"}), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
-
-
-# ----------------------------
-# LOGIN
-# ----------------------------
 @auth_bp.route("/login", methods=["POST"])
 def login():
     data = request.json
+    username = data.get("username")
+    password = data.get("password")
 
-    try:
-        username = data.get("username")
-        password = data.get("password")
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
 
-        user = login_user(username, password)
+    cursor.execute("SELECT * FROM users WHERE username=%s AND password=%s", (username, password))
+    user = cursor.fetchone()
+    conn.close()
 
-        if not user:
-            return jsonify({"error": "Invalid credentials"}), 401
+    if not user:
+        return {"error": "Invalid"}, 401
 
-        token = create_access_token(identity=user["id"])
+    token = jwt.encode({
+        "user_id": user["id"],
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=10)
+    }, SECRET, algorithm="HS256")
 
-        return jsonify({"token": token}), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
+    return {"access_token": token}

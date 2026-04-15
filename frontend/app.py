@@ -1,37 +1,67 @@
 import streamlit as st
 import requests
+import uuid
+import tempfile
 import time
+import sys
+
+from reportlab.platypus import SimpleDocTemplate, Paragraph
+from reportlab.lib.styles import getSampleStyleSheet
+from docx import Document
+
+# UTF-8 FIX
+sys.stdout.reconfigure(encoding='utf-8')
 
 API_URL = "http://127.0.0.1:5000"
 
 st.set_page_config(page_title="LinkedIn AI Agent", layout="wide")
 
-# ----------------------------
-# SESSION STATE
-# ----------------------------
+# ---------------- SESSION ----------------
 if "token" not in st.session_state:
     st.session_state.token = None
 
 if "page" not in st.session_state:
     st.session_state.page = "login"
 
-if "post" not in st.session_state:
-    st.session_state.post = ""
+if "conversations" not in st.session_state:
+    st.session_state.conversations = {}
 
-if "favourite_added" not in st.session_state:
-    st.session_state.favourite_added = False
+if "current_chat" not in st.session_state:
+    chat_id = str(uuid.uuid4())
+    st.session_state.current_chat = chat_id
+    st.session_state.conversations[chat_id] = []
 
-if "scored" not in st.session_state:
-    st.session_state.scored = False
+# ---------------- FILE HELPERS ----------------
+def create_pdf(text):
+    file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+    doc = SimpleDocTemplate(file.name)
+    styles = getSampleStyleSheet()
 
-# ----------------------------
-# SAFE REQUEST (NO FAKE ERRORS)
-# ----------------------------
+    safe_text = text.encode("utf-8", "ignore").decode("utf-8")
+    doc.build([Paragraph(safe_text, styles["Normal"])])
+
+    return file.name
+
+def create_docx(text):
+    file = tempfile.NamedTemporaryFile(delete=False, suffix=".docx")
+    doc = Document()
+    doc.add_paragraph(text)
+    doc.save(file.name)
+    return file.name
+
+def create_txt(text):
+    file = tempfile.NamedTemporaryFile(delete=False, suffix=".txt", mode="w", encoding="utf-8")
+    file.write(text)
+    file.close()
+    return file.name
+
+# ---------------- API ----------------
 def safe_request(method, url, payload=None):
-    headers = {}
+    headers = {"Content-Type": "application/json"}
 
-    if st.session_state.token:
-        headers["Authorization"] = f"Bearer {st.session_state.token}"
+    token = st.session_state.get("token")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
 
     try:
         if method == "GET":
@@ -39,244 +69,228 @@ def safe_request(method, url, payload=None):
         else:
             res = requests.post(url, json=payload, headers=headers)
 
-        if res.status_code == 401:
-            st.session_state.token = None
-            st.session_state.page = "login"
-            st.warning("Session expired")
-            st.rerun()
-
         if res.status_code != 200:
+            st.error(res.text)
             return None
 
         return res.json()
 
-    except:
+    except Exception as e:
+        st.error(f"Error: {e}")
         return None
 
 # =========================================================
-# LOGIN PAGE
+# LOGIN
 # =========================================================
 if st.session_state.page == "login":
 
     st.title("🔑 Login")
 
-    username = st.text_input("Username", key="login_user")
-    password = st.text_input("Password", type="password", key="login_pass")
+    u = st.text_input("Username")
+    p = st.text_input("Password", type="password")
 
     if st.button("Login"):
-        try:
-            res = requests.post(
-                f"{API_URL}/login",
-                json={"username": username, "password": password}
-            )
+        res = requests.post(f"{API_URL}/login", json={"username": u, "password": p})
 
-            if res.status_code == 200:
-                data = res.json()
-
-                if "token" in data:
-                    st.session_state.token = data["token"]
-                    st.session_state.page = "app"
-
-                    st.success("Login successful ✅")
-                    st.rerun()
-                else:
-                    st.error("Token missing")
-
-            else:
-                st.error("Invalid credentials")
-
-        except Exception as e:
-            st.error(f"Error: {e}")
-
-    if st.button("Go to Register"):
-        st.session_state.page = "register"
-        st.rerun()
+        if res.status_code == 200:
+            st.session_state.token = res.json()["access_token"]
+            st.session_state.page = "app"
+            st.rerun()
+        else:
+            st.error("Invalid credentials")
 
 # =========================================================
-# REGISTER PAGE
-# =========================================================
-elif st.session_state.page == "register":
-
-    st.title("📝 Register")
-
-    username = st.text_input("Username", key="reg_user")
-    password = st.text_input("Password", type="password", key="reg_pass")
-
-    if st.button("Register"):
-        try:
-            res = requests.post(
-                f"{API_URL}/register",
-                json={"username": username, "password": password}
-            )
-
-            if res.status_code == 200:
-                st.success("User created!")
-                st.session_state.page = "login"
-                st.rerun()
-            else:
-                st.error(res.text)
-
-        except Exception as e:
-            st.error(f"Error: {e}")
-
-    if st.button("Back to Login"):
-        st.session_state.page = "login"
-        st.rerun()
-
-# =========================================================
-# MAIN APP
+# APP
 # =========================================================
 elif st.session_state.page == "app":
 
-    if not st.session_state.token:
-        st.session_state.page = "login"
+    # ---------------- SIDEBAR ----------------
+    st.sidebar.title("💬 Conversations")
+
+    # New Chat
+    if st.sidebar.button("➕ New Chat"):
+        new_id = str(uuid.uuid4())
+        st.session_state.conversations[new_id] = []
+        st.session_state.current_chat = new_id
         st.rerun()
 
-    # Sidebar
-    st.sidebar.success("Logged in ✅")
+    # Chat list
+    for cid in list(st.session_state.conversations.keys()):
+        if st.sidebar.button(f"Chat {cid[:5]}", key=cid):
+            st.session_state.current_chat = cid
+            st.rerun()
+
+    st.sidebar.divider()
+
+    # ---------------- HISTORY ----------------
+    st.sidebar.subheader("📜 History")
+
+    if st.sidebar.button("Load History"):
+        res = safe_request("GET", f"{API_URL}/posts")
+        if res and "data" in res:
+            new_id = str(uuid.uuid4())
+            st.session_state.conversations[new_id] = [
+                {
+                    "role": "assistant",
+                    "content": p["content"],
+                    "readonly": True   # 👈 NO BUTTONS
+                }
+                for p in res["data"]
+            ]
+            st.session_state.current_chat = new_id
+            st.rerun()
+
+    # ---------------- FAVORITES ----------------
+    st.sidebar.subheader("⭐ Favorites")
+
+    if st.sidebar.button("Load Favorites"):
+        res = safe_request("GET", f"{API_URL}/favorites")
+        if res and "data" in res:
+            new_id = str(uuid.uuid4())
+            st.session_state.conversations[new_id] = [
+                {
+                    "role": "assistant",
+                    "content": f["content"],
+                    "readonly": True   # 👈 NO BUTTONS
+                }
+                for f in res["data"]
+            ]
+            st.session_state.current_chat = new_id
+            st.rerun()
+
+    st.sidebar.divider()
+
+    # ---------------- SETTINGS ----------------
+    model = st.sidebar.selectbox("Model", ["phi3", "mistral", "llama3"])
+    style = st.sidebar.selectbox("Style", ["professional", "casual", "storytelling"])
+
+    if st.sidebar.button("🧹 Clear Chat"):
+        st.session_state.conversations[st.session_state.current_chat] = []
+        st.rerun()
 
     if st.sidebar.button("Logout"):
         st.session_state.token = None
         st.session_state.page = "login"
         st.rerun()
 
-    st.title("🚀 LinkedIn AI Agent")
+    # ---------------- CHAT ----------------
+    st.title("💬 LinkedIn AI Generator")
 
-    tabs = st.tabs(["Generate", "Comment", "Hashtags", "History", "Favorites"])
+    messages = st.session_state.conversations[st.session_state.current_chat]
 
-    # =====================================================
-    # GENERATE
-    # =====================================================
-    with tabs[0]:
-        topic = st.text_input("Topic", key="gen_topic")
-        style = st.selectbox("Style", ["professional", "viral", "story"], key="gen_style")
-        use_rag = st.checkbox("Use RAG")
+    for i, msg in enumerate(messages):
 
-        if st.button("Generate Post"):
+        readonly = msg.get("readonly", False)
 
-            progress = st.progress(0)
-            status = st.empty()
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
 
-            for i in range(0, 60, 10):
-                progress.progress(i)
-                status.text("Thinking...")
-                time.sleep(0.2)
+            # SHOW BUTTONS ONLY FOR NORMAL CHAT
+            if not readonly:
 
-            endpoint = "/generate-rag" if use_rag else "/generate"
+                if msg["role"] == "assistant":
 
-            res = safe_request(
-                "POST",
-                f"{API_URL}{endpoint}",
-                {"topic": topic, "style": style}
-            )
+                    col1, col2, col3, col4, col5 = st.columns(5)
 
-            progress.progress(100)
+                    # Favorite
+                    with col1:
+                        if st.button("⭐", key=f"fav_{i}"):
+                            safe_request("POST", f"{API_URL}/favorite", {
+                                "topic": "chat",
+                                "content": msg["content"]
+                            })
+                            st.toast("Saved")
 
-            if res:
-                st.session_state.post = res["data"]["content"]
-                st.session_state.favourite_added = False
-                st.session_state.scored = False
-
-        if st.session_state.post:
-            edited = st.text_area("Edit Post", st.session_state.post, height=250)
-
-            st.download_button("📥 Download", edited)
-
-            col1, col2, col3 = st.columns(3)
-
-            # ⭐ ADD FAVOURITE
-            with col1:
-                if st.session_state.favourite_added:
-                    st.button("⭐ Added", disabled=True)
-                else:
-                    if st.button("⭐ Add Favourite"):
-                        res = safe_request(
-                            "POST",
-                            f"{API_URL}/favorite",
-                            {"topic": topic, "content": edited}
+                    # PDF
+                    with col2:
+                        pdf = create_pdf(msg["content"])
+                        st.download_button(
+                            "PDF",
+                            open(pdf, "rb"),
+                            file_name="chat.pdf",
+                            key=f"pdf_{i}"  # ✅ UNIQUE
                         )
-                        if res:
-                            st.session_state.favourite_added = True
-                            st.success("Added to favourites ✅")
+
+                    # DOCX
+                    with col3:
+                        docx = create_docx(msg["content"])
+                        st.download_button(
+                            "DOCX",
+                            open(docx, "rb"),
+                            file_name="chat.docx",
+                            key=f"docx_{i}"  # ✅ UNIQUE
+                        )
+
+                    # TXT
+                    with col4:
+                        txt = create_txt(msg["content"])
+                        st.download_button(
+                            "TXT",
+                            open(txt, "rb"),
+                            file_name="chat.txt",
+                            key=f"txt_{i}"  # ✅ UNIQUE
+                        )
+
+                    # DELETE
+                    with col5:
+                        if st.button("🗑", key=f"del_{i}"):
+                            messages.pop(i)
                             st.rerun()
 
-            # 🔄 REGENERATE
-            with col2:
-                if st.button("🔄 Regenerate"):
-                    st.session_state.post = ""
-                    st.session_state.favourite_added = False
-                    st.session_state.scored = False
-                    st.rerun()
+                # EDIT (only user)
+                if msg["role"] == "user":
+                    if st.button("✏️ Edit", key=f"edit_{i}"):
+                        st.session_state.edit_index = i
 
-            # 🧠 SCORE
-            with col3:
-                if st.session_state.scored:
-                    st.button("🧠 Scored", disabled=True)
-                else:
-                    if st.button("🧠 Score"):
-                        res = safe_request(
-                            "POST",
-                            f"{API_URL}/score",
-                            {"content": edited}
-                        )
-                        if res:
-                            st.session_state.scored = True
-                            st.info(res["score"])
+    # ---------------- EDIT ----------------
+    if "edit_index" in st.session_state:
+        idx = st.session_state.edit_index
+        new_text = st.text_input("Edit message", value=messages[idx]["content"])
 
-    # =====================================================
-    # COMMENT
-    # =====================================================
-    with tabs[1]:
-        content = st.text_area("Paste post")
+        if st.button("Update"):
+            messages[idx]["content"] = new_text
+            messages[idx]["readonly"] = False
+            del st.session_state.edit_index
+            st.rerun()
 
-        if st.button("Generate Comment"):
-            res = safe_request(
-                "POST",
-                f"{API_URL}/comment",
-                {"content": content}
-            )
-            if res:
-                st.write(res["comment"])
+    # ---------------- INPUT ----------------
+    user_input = st.chat_input("Enter topic...")
 
-    # =====================================================
-    # HASHTAGS
-    # =====================================================
-    with tabs[2]:
-        topic2 = st.text_input("Topic for hashtags")
+    if user_input:
 
-        if st.button("Generate Tags"):
-            res = safe_request(
-                "POST",
-                f"{API_URL}/hashtags",
-                {"topic": topic2}
-            )
-            if res:
-                st.write(res["hashtags"])
-    # =====================================================
-    # HISTORY
-    # =====================================================
+        messages.append({
+            "role": "user",
+            "content": user_input,
+            "readonly": False
+        })
 
-    with tabs[3]:
-        if st.button("Load History"):
-            res = safe_request("GET", f"{API_URL}/posts")
-            if res:
-                for p in res["data"]:
-                    st.markdown(f"### 📌 {p['topic']}")
-                    st.write(p["content"])
+        placeholder = st.empty()
+        full_text = ""
 
-    # =====================================================
-    # Favourites
-    # =====================================================
-
-    with tabs[4]:
-        st.subheader("⭐ Saved Favourites")
-
-        res = safe_request("GET", f"{API_URL}/favorites")
+        res = safe_request(
+            "POST",
+            f"{API_URL}/generate",
+            {
+                "topic": user_input,
+                "style": style,
+                "model": model
+            }
+        )
 
         if res and "data" in res:
-            for f in res["data"]:
-                st.markdown(f"### ⭐ {f['topic']}")
-                st.write(f["content"])
-                st.divider()
+            reply = res["data"]["content"]
         else:
-            st.info("No favourites yet")
+            reply = "❌ Error generating response"
+
+        for word in reply.split():
+            full_text += word + " "
+            placeholder.markdown(full_text)
+            time.sleep(0.02)
+
+        messages.append({
+            "role": "assistant",
+            "content": reply,
+            "readonly": False
+        })
+
+        st.rerun()

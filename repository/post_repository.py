@@ -1,41 +1,45 @@
 from db import get_connection
 
-def save_post(topic, content, model):
+def insert_post(user_id, topic, content, model):
     conn = get_connection()
     cursor = conn.cursor()
 
     cursor.execute(
-        "INSERT INTO posts (topic, content, model) VALUES (%s, %s, %s)",
-        (topic, content, model)
+        "INSERT INTO posts(user_id, topic, content, model) VALUES(%s,%s,%s,%s)",
+        (user_id, topic, content, model)
     )
+
     conn.commit()
+    conn.close()
 
-
-def get_all_posts():
+def get_user_posts(user_id):
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
 
-    cursor.execute("SELECT * FROM posts ORDER BY created_at DESC")
-    return cursor.fetchall()
+    cursor.execute("SELECT * FROM posts WHERE user_id=%s", (user_id,))
+    data = cursor.fetchall()
 
+    conn.close()
+    return data
 
-
-# Save Favorite
-def save_favorite(topic, content):
+def save_favorite(user_id, topic, content):
     conn = get_connection()
     cursor = conn.cursor()
 
     cursor.execute(
-        "INSERT INTO favorites (topic, content) VALUES (%s, %s)",
-        (topic, content)
+        "INSERT INTO favorites(user_id, topic, content) VALUES(%s,%s,%s)",
+        (user_id, topic, content)
     )
+
     conn.commit()
+    conn.close()
 
-
-# Get Favorites
-def get_favorites():
+def get_user_favorites(user_id):
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
 
-    cursor.execute("SELECT * FROM favorites ORDER BY created_at DESC")
-    return cursor.fetchall()
+    cursor.execute("SELECT * FROM favorites WHERE user_id=%s", (user_id,))
+    data = cursor.fetchall()
+
+    conn.close()
+    return data
