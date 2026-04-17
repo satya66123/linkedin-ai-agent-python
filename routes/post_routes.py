@@ -1,5 +1,5 @@
 from flask import Blueprint, request
-from services.post_service import generate_post, save_post
+from services.post_service import generate_post, save_post, generate_post2
 from repository.post_repository import (
     get_user_posts,
     get_user_favorites,
@@ -29,8 +29,8 @@ def clean_output(text):
 
     return "\n".join(bullets[:3])
 
+from repository.chat_repository import save_message
 
-# ================= GENERATE =================
 @post_bp.route("/generate", methods=["POST"])
 def generate():
     user_id = get_user_id_from_token()
@@ -40,54 +40,40 @@ def generate():
     style = data.get("style", "professional")
     model = data.get("model", "phi3")
     doc_ids = data.get("doc_ids")
+    conversation_id = data.get("conversation_id")  # 🔥 IMPORTANT
+
+    # 🔥 SAVE USER MESSAGE FIRST
+    if conversation_id:
+        save_message(conversation_id, "user", topic)
 
     # 🔥 RAG SEARCH
     context, score = search(topic, doc_filter=doc_ids)
 
-    # 🔥 DECISION
     USE_LLM = True
-    if context and len(context) > 40 and score > 0.5:
+    if context and score > 0.5:
         USE_LLM = False
 
-    # ================= RESPONSE =================
+    # 🔥 GENERATE RESPONSE
     if not USE_LLM:
-        # RAG → summarize into bullets
-        prompt = f"""
-Convert the following into EXACTLY 3 bullet points.
-
-STRICT RULES:
-- Only bullet points starting with "-"
-- Each bullet = 1 short sentence
-- No extra explanation
-
-Text:
-{context}
-"""
-        content = generate_post(prompt, style, model)
-
+        content = context
     else:
-        # LLM → strict format
         prompt = f"""
-Answer the question in EXACTLY 3 bullet points.
-
-STRICT RULES:
-- Only bullet points starting with "-"
-- Each bullet = 1 short sentence
-- No paragraphs
-- No extra text
+Use this context if relevant:
+{context}
 
 Question:
 {topic}
 """
         content = generate_post(prompt, style, model)
 
-    # 🔥 FINAL CLEAN
-    content = clean_output(content)
+    # 🔥 SAVE AI MESSAGE
+    if conversation_id:
+        save_message(conversation_id, "assistant", content)
 
+    # (optional) keep your post history
     save_post(user_id, topic, content, model)
 
     return {"data": {"content": content}}
-
 
 # ================= HISTORY =================
 @post_bp.route("/posts", methods=["GET"])
@@ -133,3 +119,44 @@ def documents():
 def delete_doc(doc_id):
     delete_document(doc_id)
     return {"message": "Deleted"}
+
+
+
+# ================= CHAT GENERATE =================
+@post_bp.route("/generate2", methods=["POST"])
+def generate2():
+    user_id = get_user_id_from_token()
+    data = request.json
+    message = data.get("topic")  # rename logically
+    style = data.get("style", "professional")
+    model = data.get("model", "phi3")
+    doc_ids = data.get("doc_ids")
+    conversation_id = data.get("conversation_id")
+
+    # 🔥 SAVE USER MESSAGE
+    if conversation_id:
+        save_message(conversation_id, "user", message)
+
+    # 🔥 RAG SEARCH
+    context, score = search(message, doc_filter=doc_ids)
+
+    USE_LLM = True
+    if context and score > 0.5:
+        USE_LLM = False
+
+    # 🔥 RESPONSE
+    if not USE_LLM:
+        response = context
+    else:
+        prompt = f"""
+        Answer naturally like ChatGPT.
+
+        User: {message}
+        """
+        response = generate_post2(prompt, style, model)
+
+    # 🔥 SAVE AI MESSAGE
+    if conversation_id:
+        save_message(conversation_id, "assistant", response)
+
+    return {"data": {"content": response}}
