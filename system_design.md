@@ -1,4 +1,4 @@
-# 🏗 System Design – LinkedIn AI Agent
+# 🏗 System Design – LinkedIn AI Agent + Chat app
 
 ## 📌 Overview
 
