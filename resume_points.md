@@ -1,8 +1,8 @@
-# 💼 Resume Points – LinkedIn AI Agent
+# 💼 Resume Points – LinkedIn AI Agent +Chat app
 
 ## 🔥 Strong Resume Bullet Points
 
-• Built a full-stack AI-powered LinkedIn content generator using Python, Flask, MySQL, and Streamlit with local LLMs (Ollama)
+• Built a full-stack AI-powered LinkedIn content generator + Chatapp using Python, Flask, MySQL, and Streamlit with local LLMs (Ollama)
 
 • Implemented Retrieval Augmented Generation (RAG) using SentenceTransformers and FAISS to improve contextual AI responses
 
