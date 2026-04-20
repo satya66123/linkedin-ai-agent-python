@@ -1,4 +1,4 @@
-# 🚀 LinkedIn AI Agent (Ollama + Python)
+# 🚀 LinkedIn AI Agent + Chat app (Ollama + Python)
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
 ![Flask](https://img.shields.io/badge/Flask-Backend-black)
@@ -29,6 +29,7 @@ An **AI-powered LinkedIn content generator** built using:
 - LinkedIn posts
 - Comments
 - Hashtags
+- Chats
 
 👉 Runs **fully locally without OpenAI or cloud APIs**
 
@@ -39,10 +40,12 @@ An **AI-powered LinkedIn content generator** built using:
 - 📝 Multi-style LinkedIn post generation  
   - Professional  
   - Viral  
-  - Storytelling  
+  - Storytelling
+- 📝Chat generation      
 
 - 💬 Comment Generator  
-- 🔖 Hashtag Generator  
+- 🔖 Hashtag Generator
+- 💬 Chat Generator
 - 🧠 Multi-model support (phi3, mistral, llama3)  
 - 📚 RAG (context-aware generation)  
 - 🔐 JWT Authentication (Login/Register)  
@@ -143,7 +146,8 @@ python app.py
 ### 5️⃣ Run Frontend
 
 ```bash
-streamlit run frontend/app.py
+streamlit run frontend/app.py           #linkedin ai agent
+streamlit run frontend/chat_app.py      # chat app
 ```
 
 ---
@@ -232,7 +236,7 @@ GET `/posts`
 
 ## 🧾 Resume Highlights
 
-* Developed a **full-stack AI-powered LinkedIn content generator** using Python, Flask, MySQL, and Streamlit
+* Developed a **full-stack AI-powered LinkedIn content generator and chat app** using Python, Flask, MySQL, and Streamlit
 * Implemented **RAG (FAISS + embeddings)** for contextual AI generation
 * Integrated **local LLMs (Llama3, Mistral, Phi3)** via Ollama
 * Designed secure APIs using **JWT authentication**
