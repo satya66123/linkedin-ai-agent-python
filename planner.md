@@ -6,29 +6,34 @@
 ```md
 # 📅 Project Planner
 
-## Day 1
+## Day 1 step1
 - Setup project structure
 - Flask backend initialized
 
-## Day 2
+## Day 1 step2
 - CRUD APIs
 - MySQL integration
 
-## Day 3
+## Day 1 step3
 - Ollama integration
 - AI post generation
 
-## Day 4
+## Day 1 step4
 - RAG implementation (FAISS + embeddings)
 
-## Day 5
+## Day 1 step5
 - Streamlit frontend
 
-## Day 6
+## Day 2 step1
 - Auth (JWT)
 - Favorites + scoring
 
-## Day 7
+## Day 2 step2
 - UI improvements
+- Error handling
+- Final polishing
+
+## Day 2 final
+- Chat UI improvements
 - Error handling
 - Final polishing
