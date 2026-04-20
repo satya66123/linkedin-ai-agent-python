@@ -2,7 +2,7 @@
 
 ## 📌 Overview
 
-A full-stack AI application that generates LinkedIn posts using local LLMs (Ollama) with RAG for contextual responses.
+A full-stack AI application that generates LinkedIn posts + chats using local LLMs (Ollama) with RAG for contextual responses.
 
 ---
 
@@ -29,13 +29,14 @@ User → Streamlit UI → Flask Backend → Services → DB + RAG → Ollama →
 - Routes:
   - `/login`
   - `/register`
-  - `/generate`
+  - `/generate1`
   - `/generate-rag`
   - `/comment`
   - `/hashtags`
   - `/favorite`
   - `/posts`
-
+  - `/chat`
+  - `/generate`
 ---
 
 ### 3. Service Layer
